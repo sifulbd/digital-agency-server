@@ -23,18 +23,18 @@ client.connect ( err => {
     const adminsCollection = client.db("digitalAgency").collection("admins");
     const ordersCollection = client.db("digitalAgency").collection("orders");
 
-    app.post("/addNewService", (req, res) => {
+    app.post("/addservice", (req, res) => {
         const file = req.files.file;
         const title = req.body.title;
         const description = req.body.description;
         const img = file.name;
         
-        serviceCollection.insertOne({title, description, img})
+        servicesCollection.insertOne({title, description, img})
         .then(result => {
             res.send(result.insertedCount > 0);
         });
 
-        file.mv(`${__dirname}/admins/${file.name}`, err => {
+        file.mv(`${__dirname}/img/${file.name}`, err => {
             if(err){
                 return res.status(500).send({msg: "failed to Upload"})
             }
@@ -43,7 +43,7 @@ client.connect ( err => {
     });
 
     app.get('/services', (req, res) => {
-        serviceCollection.find({})
+        servicesCollection.find({})
         .toArray( (err, documents) => {
             res.send(documents);
         })
