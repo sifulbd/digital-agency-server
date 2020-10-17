@@ -1,18 +1,19 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const fs = require('fs-extra');
 const fileUpload = require('express-fileupload');
 require('dotenv').config();
+
 const ObjectId = require('mongodb').ObjectId;
 const MongoClient = require('mongodb').MongoClient;
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.eobd6.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true  });
-
 const app = express();
 const port = 7000;
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('admins'));
+app.use(express.static('img'));
 app.use(fileUpload());
 
 
@@ -28,18 +29,41 @@ client.connect ( err => {
         const title = req.body.title;
         const description = req.body.description;
         const img = file.name;
-        
-        servicesCollection.insertOne({title, description, img})
+
+        const filepath = `${__dirname}/img/${file.name}`; 
+
+        servicesCollection.insertOne({title, description,  img})
         .then(result => {
             res.send(result.insertedCount > 0);
         });
 
-        file.mv(`${__dirname}/img/${file.name}`, err => {
+        file.mv(filepath, err => {
             if(err){
-                return res.status(500).send({msg: "failed to Upload"})
+             res.status(500).send({msg: "failed to Upload"})
             }
-            return res.send({name: file.name, path: `/${file.name}`})
+             res.send({name: file.name, path: `/${file.name}`})
         })
+
+        // const newImg = fs.readFileSync(filepath);
+        // const encImg = newImg.toString('base64');
+
+        // var image = {
+        //     contentType: req.files.file.mimetype,
+        //     size: req.files.file.size,
+        //     img: Buffer(encImg, 'base64')
+        // }
+
+        // servicesCollection.insertOne({title, description, img})
+        // .then(result => {
+        //     fs.remove(filepath, error => {
+        //         if(error){
+        //             console.log(error)
+        //         }
+        //         res.send(result.insertedCount > 0);
+        //     })
+        // });
+
+
     });
 
     app.get('/services', (req, res) => {
@@ -86,8 +110,8 @@ client.connect ( err => {
         })
     });
 
-    app.get('/orders/:key', (req, res) => {
-        serviceCollection.find({_id: ObjectId(req.params.key)})
+    app.get('/allorders/:key', (req, res) => {
+        servicesCollection.find({_id: ObjectId(req.params.key)})
         .toArray( (err, documents) => {
             res.send(documents[0]);
         })
@@ -124,4 +148,6 @@ app.get('/', (req, res) => {
     res.send('Hello World..')
 })
 
-app.listen(process.env.PORT || port)
+app.listen(process.env.PORT || port, () => {
+    console.log('App is listening...')
+})
